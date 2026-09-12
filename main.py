@@ -4,6 +4,8 @@ import json
 import os
 import random
 import re
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import CommandStart
@@ -55,6 +57,19 @@ dp = Dispatcher(storage=MemoryStorage())
 
 DB_FILE = "users_db.json"
 PROMO_FILE = "promos_db.json"
+
+
+# Render port xatosi bermasligi uchun mini server
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is running successfully!")
+
+def run_web_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(("0.0.0.0", port), SimpleHandler)
+    server.serve_forever()
 
 
 def load_db():
@@ -1476,4 +1491,10 @@ async def main():
 
 
 if __name__ == "__main__":
+    if not os.path.exists("sessions"):
+        os.makedirs("sessions")
+    
+    # Veb-serverni alohida oqimda ishga tushiramiz (Render port xatosini oldini olish uchun)
+    threading.Thread(target=run_web_server, daemon=True).start()
+    
     asyncio.run(main())
