@@ -177,14 +177,11 @@ def apply_font(text, font_style):
 
 
 def get_hijri_qurbon_hayiti(year):
-    # Taxminiy yoki hisoblangan Qurbon hayiti sanalari (Hijriy 10-Zulhijja gregorian taqvimga o'girilgan)
-    # Umumiy misol sifatida taxminiy sana ro'yxati (yoki yillik taqvim mantiqi):
     qurbon_dates = {
-        2026: (datetime(2025, 6, 6, tzinfo=TASHKENT_TZ), "05:30"), # misol uchun
+        2025: (datetime(2025, 6, 6, tzinfo=TASHKENT_TZ), "05:30"),
         2026: (datetime(2026, 5, 27, tzinfo=TASHKENT_TZ), "05:30"),
         2027: (datetime(2027, 5, 17, tzinfo=TASHKENT_TZ), "05:30"),
     }
-    # Agar yil aniq bo'lmasa, taxminiy formula yoki yaqin Hijriy hisob qo'llaniladi:
     target_dt = qurbon_dates.get(year, (datetime(year, 6, 1, tzinfo=TASHKENT_TZ), "05:30"))
     return target_dt
 
@@ -339,7 +336,6 @@ async def start_user_clock(user_id, client):
                     hours = int(diff.total_seconds()) // 3600
                     extra_bio.append(f"🎄 Yangi yilgacha: {days} kun {hours%24} soat")
                 elif b_type == "vatan_himoyachilari":
-                    # 14-yanvar
                     target = datetime(now_dt.year, 1, 14, 0, 0, tzinfo=TASHKENT_TZ)
                     if target < now_dt:
                         target = datetime(now_dt.year + 1, 1, 14, 0, 0, tzinfo=TASHKENT_TZ)
@@ -349,7 +345,6 @@ async def start_user_clock(user_id, client):
                     wday = DAYS_OF_WEEK_UZ[target.weekday()]
                     extra_bio.append(f"🎖 14-yanvargacha: {days}k {hours%24}s ({wday})")
                 elif b_type == "sakkiz_mart":
-                    # 8-mart
                     target = datetime(now_dt.year, 3, 8, 0, 0, tzinfo=TASHKENT_TZ)
                     if target < now_dt:
                         target = datetime(now_dt.year + 1, 3, 8, 0, 0, tzinfo=TASHKENT_TZ)
@@ -1405,7 +1400,7 @@ async def process_receipt(message: types.Message, state: FSMContext):
 @dp.callback_query(F.data.startswith("pay_yes_"))
 async def admin_approve_payment(call: types.CallbackQuery):
     parts = call.data.split("_")
-    target_user_id = parts
+    target_user_id = int(parts)
     amount = int(parts)
 
     u_data = get_user_data(target_user_id)
@@ -1413,12 +1408,12 @@ async def admin_approve_payment(call: types.CallbackQuery):
     save_db(db)
 
     await call.message.edit_caption(
-        caption=call.message.caption + f"\n\n<b>STATUS: Tasdiqlandi ✅ ({amount:,} so'm qo'shildi)</b>",
+        caption=(call.message.caption or "") + f"\n\n<b>STATUS: Tasdiqlandi ✅ ({amount:,} so'm qo'shildi)</b>",
         parse_mode="HTML",
     )
     try:
         await bot.send_message(
-            chat_id=int(target_user_id),
+            chat_id=target_user_id,
             text=f"🎉 Tabriklaymiz! To'lovingiz tasdiqlandi va balansingizga <b>{amount:,} so'm</b> qo'shildi! 💰",
             parse_mode="HTML",
         )
