@@ -58,6 +58,7 @@ dp = Dispatcher(storage=MemoryStorage())
 DB_FILE = "users_db.json"
 PROMO_FILE = "promos_db.json"
 
+db_lock = threading.Lock()
 
 # Render port xatosi bermasligi uchun mini server
 class SimpleHandler(BaseHTTPRequestHandler):
@@ -73,18 +74,20 @@ def run_web_server():
 
 
 def load_db():
-    if os.path.exists(DB_FILE):
-        try:
-            with open(DB_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return {}
-    return {}
+    with db_lock:
+        if os.path.exists(DB_FILE):
+            try:
+                with open(DB_FILE, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                return {}
+        return {}
 
 
 def save_db(data):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    with db_lock:
+        with open(DB_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
 
 
 def load_promos():
