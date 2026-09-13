@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 import json
 import os
 import random
@@ -176,6 +176,19 @@ def apply_font(text, font_style):
     return text
 
 
+def get_hijri_qurbon_hayiti(year):
+    # Taxminiy yoki hisoblangan Qurbon hayiti sanalari (Hijriy 10-Zulhijja gregorian taqvimga o'girilgan)
+    # Umumiy misol sifatida taxminiy sana ro'yxati (yoki yillik taqvim mantiqi):
+    qurbon_dates = {
+        2026: (datetime(2025, 6, 6, tzinfo=TASHKENT_TZ), "05:30"), # misol uchun
+        2026: (datetime(2026, 5, 27, tzinfo=TASHKENT_TZ), "05:30"),
+        2027: (datetime(2027, 5, 17, tzinfo=TASHKENT_TZ), "05:30"),
+    }
+    # Agar yil aniq bo'lmasa, taxminiy formula yoki yaqin Hijriy hisob qo'llaniladi:
+    target_dt = qurbon_dates.get(year, (datetime(year, 6, 1, tzinfo=TASHKENT_TZ), "05:30"))
+    return target_dt
+
+
 class ClockSetup(StatesGroup):
     waiting_for_phone = State()
     waiting_for_code = State()
@@ -287,7 +300,7 @@ async def start_user_clock(user_id, client):
                 clean_bio = about_text.split("|")[0].strip()
             else:
                 clean_bio = about_text
-            clean_bio = re.sub(r"(🕒|⏳|🎂|🎄|✨|Good|Tug'ilgan|Yangi).*$", "", clean_bio).strip()
+            clean_bio = re.sub(r"(🕒|⏳|🎂|🎄|✨|Good|Tug'ilgan|Yangi|Vatan|Qurbon|8-mart).*$", "", clean_bio).strip()
             
             extra_bio = []
             if u_data.get("bio_clock", False):
@@ -314,18 +327,46 @@ async def start_user_clock(user_id, client):
                             b_target = datetime(now_dt.year + 1, b_month, b_day, 0, 0, tzinfo=TASHKENT_TZ)
                         diff = b_target - now_dt
                         days = diff.days
-                        hours = diff.seconds // 3600
-                        
+                        hours = diff.total_seconds() // 3600
                         weekday_name = DAYS_OF_WEEK_UZ[b_target.weekday()]
-                        extra_bio.append(f"🎂 Tug'ilgan kungacha: {days} kun {hours} soat ({weekday_name})")
+                        extra_bio.append(f"🎂 Tug'ilgan kungacha: {days} kun {int(hours)%24} soat ({weekday_name})")
                     except Exception:
                         extra_bio.append("🎂 Tug'ilgan kun")
                 elif b_type == "yangi_yil":
                     ny_target = datetime(now_dt.year + 1, 1, 1, 0, 0, tzinfo=TASHKENT_TZ)
                     diff = ny_target - now_dt
                     days = diff.days
-                    hours = diff.seconds // 3600
-                    extra_bio.append(f"🎄 Yangi yilgacha: {days} kun {hours} soat")
+                    hours = int(diff.total_seconds()) // 3600
+                    extra_bio.append(f"🎄 Yangi yilgacha: {days} kun {hours%24} soat")
+                elif b_type == "vatan_himoyachilari":
+                    # 14-yanvar
+                    target = datetime(now_dt.year, 1, 14, 0, 0, tzinfo=TASHKENT_TZ)
+                    if target < now_dt:
+                        target = datetime(now_dt.year + 1, 1, 14, 0, 0, tzinfo=TASHKENT_TZ)
+                    diff = target - now_dt
+                    days = diff.days
+                    hours = int(diff.total_seconds()) // 3600
+                    wday = DAYS_OF_WEEK_UZ[target.weekday()]
+                    extra_bio.append(f"🎖 14-yanvargacha: {days}k {hours%24}s ({wday})")
+                elif b_type == "sakkiz_mart":
+                    # 8-mart
+                    target = datetime(now_dt.year, 3, 8, 0, 0, tzinfo=TASHKENT_TZ)
+                    if target < now_dt:
+                        target = datetime(now_dt.year + 1, 3, 8, 0, 0, tzinfo=TASHKENT_TZ)
+                    diff = target - now_dt
+                    days = diff.days
+                    hours = int(diff.total_seconds()) // 3600
+                    wday = DAYS_OF_WEEK_UZ[target.weekday()]
+                    extra_bio.append(f"🌷 8-martgacha: {days}k {hours%24}s ({wday})")
+                elif b_type == "qurbon_hayiti":
+                    qh_dt, namoz_time = get_hijri_qurbon_hayiti(now_dt.year)
+                    if qh_dt < now_dt:
+                        qh_dt, namoz_time = get_hijri_qurbon_hayiti(now_dt.year + 1)
+                    diff = qh_dt - now_dt
+                    days = diff.days
+                    hours = int(diff.total_seconds()) // 3600
+                    wday = DAYS_OF_WEEK_UZ[qh_dt.weekday()]
+                    extra_bio.append(f"🕌 Qurbon hayiti ({wday}): {days}k {hours%24}s | Namoz: {namoz_time}")
 
             if u_data.get("plan") == "Free":
                 extra_bio.append("✨ @profilsoat_uz_bot")
@@ -373,9 +414,35 @@ async def add_promo_admin_cmd(message: types.Message):
             "uses": int(uses_str)
         }
         save_promos(promos_db)
-        await message.answer(f"✅ Promokod yaratildi: <b>{code_upper}</b> ({int(amount_str):,} so'm, {uses_str} ta limit)", parse_mode="HTML")
+        
+        copy_text = f"copromo {code_upper} {amount_str} {uses_str}"
+        resp_msg = (
+            f"✅ Promokod yaratildi: <b>{code_upper}</b> ({int(amount_str):,} so'm, {uses_str} ta limit)\n\n"
+            f"📋 <b>Copy promo uchun:</b>\n"
+            f"<code>{copy_text}</code>"
+        )
+        kb = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="📋 Copy promo", callback_data=f"copy_promo_info_{code_upper}")]
+            ]
+        )
+        await message.answer(resp_msg, parse_mode="HTML", reply_markup=kb)
     else:
         await message.answer("ℹ️ Foydalanish: <code>/addpromo <KOD> <summa> <limit></code>", parse_mode="HTML")
+
+
+@dp.callback_query(F.data.startswith("copy_promo_info_"))
+async def copy_promo_callback(call: types.CallbackQuery):
+    c_code = call.data.replace("copy_promo_info_", "")
+    pdata = promos_db.get(c_code, {})
+    amt = pdata.get("amount", 0)
+    uses = pdata.get("uses", 0)
+    copy_payload = f"copromo {c_code} {amt} {uses}"
+    await call.message.answer(
+        f"📋 <b>Nusxalash uchun matn:</b>\n<code>{copy_payload}</code>",
+        parse_mode="HTML"
+    )
+    await call.answer("Tayyor!")
 
 
 @dp.message(CommandStart())
@@ -1004,7 +1071,10 @@ async def set_bio_menu_cb(call: types.CallbackQuery):
         "oddiy": "Oddiy bio soat",
         "salomlashish": "Salomlashish",
         "tugilgan_kun": "Tug'ilgan kun hisoblagichi",
-        "yangi_yil": "Yangi yil hisoblagichi"
+        "yangi_yil": "Yangi yil hisoblagichi",
+        "vatan_himoyachilari": "14-yanvar (Vatan himoyachilari)",
+        "sakkiz_mart": "8-mart (Xalqaro xotin-qizlar)",
+        "qurbon_hayiti": "Qurbon hayiti & Namoz vaqti"
     }
     bio_type_text = type_names.get(b_type, "Oddiy bio soat")
     
@@ -1068,30 +1138,26 @@ async def choose_bio_type_menu_cb(call: types.CallbackQuery):
 
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
-            [
-                InlineKeyboardButton(text=mark("Oddiy bio soat", "oddiy"), callback_data="set_btype_oddiy"),
-            ],
-            [
-                InlineKeyboardButton(text=mark("Salomlashish", "salomlashish"), callback_data="set_btype_salomlashish"),
-            ],
-            [
-                InlineKeyboardButton(text=mark("Tug'ilgan kun hisoblagichi", "tugilgan_kun"), callback_data="set_btype_tugilgan_kun"),
-            ],
-            [
-                InlineKeyboardButton(text=mark("Yangi yil hisoblagichi", "yangi_yil"), callback_data="set_btype_yangi_yil"),
-            ],
-            [
-                InlineKeyboardButton(text="🔙 Orqaga", callback_data="set_bio_menu"),
-            ],
+            [InlineKeyboardButton(text=mark("Oddiy bio soat", "oddiy"), callback_data="set_btype_oddiy")],
+            [InlineKeyboardButton(text=mark("Salomlashish", "salomlashish"), callback_data="set_btype_salomlashish")],
+            [InlineKeyboardButton(text=mark("Tug'ilgan kun", "tugilgan_kun"), callback_data="set_btype_tugilgan_kun")],
+            [InlineKeyboardButton(text=mark("Yangi yil", "yangi_yil"), callback_data="set_btype_yangi_yil")],
+            [InlineKeyboardButton(text=mark("14-yanvar", "vatan_himoyachilari"), callback_data="set_btype_vatan_himoyachilari")],
+            [InlineKeyboardButton(text=mark("8-mart", "sakkiz_mart"), callback_data="set_btype_sakkiz_mart")],
+            [InlineKeyboardButton(text=mark("Qurbon hayiti & Namoz", "qurbon_hayiti"), callback_data="set_btype_qurbon_hayiti")],
+            [InlineKeyboardButton(text="🔙 Orqaga", callback_data="set_bio_menu")],
         ]
     )
     
     desc_text = (
         "🎨 <b>Bio tipini tanlang:</b>\n\n"
-        "0️⃣ Oddiy bio soat - Standart vaqt va sana\n"
-        "1️⃣ Salomlashish - Kun vaqtiga qarab salomlashish\n"
-        "2️⃣ Tug'ilgan kun - Tug'ilgan kuningizga qancha qolganini ko'rsatadi\n"
-        "3️⃣ Yangi yil - Yangi yilga qancha qolganini ko'rsatadi"
+        "🕒 Oddiy - Standart vaqt\n"
+        "☀️ Salomlashish - Kun vaqti salomi\n"
+        "🎂 Tug'ilgan kun - Shaxsiy sana\n"
+        "🎄 Yangi yil - Yangi yil hisoblagichi\n"
+        "🎖 14-yanvar - Vatan himoyachilari kuni va qolgan vaqt/hafta kuni\n"
+        "🌷 8-mart - Xalqaro xotin-qizlar kuni va qolgan vaqt/hafta kuni\n"
+        "🕌 Qurbon hayiti - Hayit kuni, hafta kuni, qolgan soat/kun va hayit namoz vaqti"
     )
     await call.message.edit_text(desc_text, reply_markup=kb, parse_mode="HTML")
 
@@ -1106,7 +1172,7 @@ async def set_btype_callback(call: types.CallbackQuery, state: FSMContext):
     if btype == "tugilgan_kun":
         await state.set_state(ClockSetup.waiting_for_birthday)
         await call.message.answer(
-            "🎂 Tug'ilgan kuningizni OY-KUN formatida kiriting (masalan: 25-dekabr bolsangiz 12-25 :",
+            "🎂 Tug'ilgan kuningizni OY-KUN formatida kiriting (masalan: 25-dekabr uchun 12-25):",
             reply_markup=cancel_keyboard
         )
         return
@@ -1534,8 +1600,5 @@ async def main():
 
 if __name__ == "__main__":
     os.makedirs("sessions", exist_ok=True)
-    
-    # Veb-serverni alohida oqimda ishga tushiramiz (Render port xatosini oldini olish uchun)
     threading.Thread(target=run_web_server, daemon=True).start()
-    
     asyncio.run(main())
