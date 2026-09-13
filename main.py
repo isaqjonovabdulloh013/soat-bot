@@ -62,12 +62,15 @@ PROMO_FILE = "promos_db.json"
 
 db_lock = threading.Lock()
 
-# Render port xatosi bermasligi uchun mini server
+# Render port xatosi va HEAD so'rovlar uchun mini server
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b"Bot is running successfully!")
+    def do_HEAD(self):
+        self.send_response(200)
+        self.end_headers()
 
 def run_web_server():
     port = int(os.environ.get("PORT", 10000))
@@ -178,6 +181,7 @@ def apply_font(text, font_style):
 
 def get_hijri_qurbon_hayiti(year):
     qurbon_dates = {
+        2025: (datetime(2025, 6, 6, tzinfo=TASHKENT_TZ), "05:30"),
         2026: (datetime(2026, 5, 27, tzinfo=TASHKENT_TZ), "05:30"),
         2027: (datetime(2027, 5, 17, tzinfo=TASHKENT_TZ), "05:30"),
     }
@@ -680,8 +684,12 @@ async def finalize_pubg_order(message_obj, state: FSMContext, pubg_id: str, user
 @dp.callback_query(F.data.startswith("uc_done_"))
 async def admin_uc_done(call: types.CallbackQuery):
     parts = call.data.split("_")
-    target_user_id = int(parts)
-    uc_amount = parts
+    if len(parts) >= 4:
+        target_user_id = int(parts)
+        uc_amount = parts
+    else:
+        await call.answer("Xatolik: ma'lumot formati noto'g'ri!", show_alert=True)
+        return
 
     try:
         await bot.send_message(
@@ -1400,8 +1408,12 @@ async def process_receipt(message: types.Message, state: FSMContext):
 @dp.callback_query(F.data.startswith("pay_yes_"))
 async def admin_approve_payment(call: types.CallbackQuery):
     parts = call.data.split("_")
-    target_user_id = int(parts)
-    amount = int(parts)
+    if len(parts) >= 4:
+        target_user_id = int(parts)
+        amount = int(parts)
+    else:
+        await call.answer("Xatolik!", show_alert=True)
+        return
 
     u_data = get_user_data(target_user_id)
     u_data["balance"] += amount
@@ -1415,7 +1427,7 @@ async def admin_approve_payment(call: types.CallbackQuery):
     try:
         await bot.send_message(
             chat_id=target_user_id,
-            text=f"✅ Pulingiz muvaffaqiyatli hisobingizga qo'shildi! Summa: <b>{amount:,} so'm</b> 💸",
+            text=f"✅ Pulingiz muvaffaqiyatli hisobingizga qo'shildi! Summa: <b>{amount:,} so'm</b> 💰",
             parse_mode="HTML",
         )
     except Exception:
@@ -1426,7 +1438,11 @@ async def admin_approve_payment(call: types.CallbackQuery):
 @dp.callback_query(F.data.startswith("pay_no_"))
 async def admin_reject_payment(call: types.CallbackQuery):
     parts = call.data.split("_")
-    target_user_id = int(parts)
+    if len(parts) >= 3:
+        target_user_id = int(parts)
+    else:
+        await call.answer("Xatolik!", show_alert=True)
+        return
 
     old_caption = call.message.caption or ""
     await call.message.edit_caption(
