@@ -28,7 +28,7 @@ from telethon.errors import (
 )
 
 # ================= ASOSIY SOZLAMALAR =================
-BOT_TOKEN = "8817958511:AAEW1EBnsrXEiLc8qQuCraRGS4LF34sBFXM"
+BOT_TOKEN = "8817958511:AAGEVp4FS6T77-RPVvmCN2U6kSGGVuIrNCM"
 
 API_ID = 27309538
 API_HASH = "a728b10f5fe73b9d2eec290147f7c74c"
