@@ -178,7 +178,7 @@ def apply_font(text, font_style):
 
 def get_hijri_qurbon_hayiti(year):
     qurbon_dates = {
-        2025: (datetime(2025, 6, 6, tzinfo=TASHKENT_TZ), "05:30"),
+        2026: (datetime(2025, 6, 6, tzinfo=TASHKENT_TZ), "05:30"),
         2026: (datetime(2026, 5, 27, tzinfo=TASHKENT_TZ), "05:30"),
         2027: (datetime(2027, 5, 17, tzinfo=TASHKENT_TZ), "05:30"),
     }
@@ -687,10 +687,11 @@ async def admin_uc_done(call: types.CallbackQuery):
     try:
         await bot.send_message(
             target_user_id,
-            f"✅ Tabriklaymiz! Siz sotib olgan <b>{uc_amount} UC</b> muvaffaqiyatli tushirildi! 🎮",
+            f"✅ Xarid qilgan <b>{uc_amount} UC</b> pubg mobile akkauntingizga tushirib berildi! 🎮",
             parse_mode="HTML"
         )
-        await call.message.edit_text(call.message.text + "\n\n<b>✅ STATUS: Bajarildi (Tushirildi)</b>", parse_mode="HTML")
+        old_text = call.message.text or ""
+        await call.message.edit_text(old_text + "\n\n<b>✅ STATUS: Bajarildi (Tushirildi)</b>", parse_mode="HTML")
         await call.answer("Foydalanuvchiga xabar yuborildi!")
     except Exception as e:
         await call.answer(f"Xatolik yuz berdi: {e}", show_alert=True)
@@ -1407,19 +1408,41 @@ async def admin_approve_payment(call: types.CallbackQuery):
     u_data["balance"] += amount
     save_db(db)
 
+    old_caption = call.message.caption or ""
     await call.message.edit_caption(
-        caption=(call.message.caption or "") + f"\n\n<b>STATUS: Tasdiqlandi ✅ ({amount:,} so'm qo'shildi)</b>",
+        caption=old_caption + f"\n\n<b>✅ STATUS: Tasdiqlandi ({amount:,} so'm qo'shildi)</b>",
         parse_mode="HTML",
     )
     try:
         await bot.send_message(
             chat_id=target_user_id,
-            text=f"🎉 Tabriklaymiz! To'lovingiz tasdiqlandi va balansingizga <b>{amount:,} so'm</b> qo'shildi! 💰",
+            text=f"✅ Pulingiz muvaffaqiyatli hisobingizga qo'shildi! Summa: <b>{amount:,} so'm</b> 💰",
             parse_mode="HTML",
         )
     except Exception:
         pass
     await call.answer("Tasdiqlash bajarildi!")
+
+
+@dp.callback_query(F.data.startswith("pay_no_"))
+async def admin_reject_payment(call: types.CallbackQuery):
+    parts = call.data.split("_")
+    target_user_id = int(parts)
+
+    old_caption = call.message.caption or ""
+    await call.message.edit_caption(
+        caption=old_caption + f"\n\n<b>❌ STATUS: Rad etildi (Chek xato)</b>",
+        parse_mode="HTML",
+    )
+    try:
+        await bot.send_message(
+            chat_id=target_user_id,
+            text="❌ Bu chekingiz soxta yoki xato.",
+            parse_mode="HTML",
+        )
+    except Exception:
+        pass
+    await call.answer("Rad etish bajarildi!")
 
 
 @dp.message(ClockSetup.waiting_for_phone, F.contact | F.text)
