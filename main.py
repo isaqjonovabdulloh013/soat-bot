@@ -52,6 +52,8 @@ DAYS_OF_WEEK_UZ = {
 }
 # =======================================================
 
+os.makedirs("sessions", exist_ok=True)
+
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 
@@ -357,6 +359,25 @@ async def start_user_clock(user_id, client):
         await asyncio.sleep(sleep_time)
 
 
+# ================= ADMIN PROMO CREATION =================
+@dp.message(F.text.startswith("/addpromo"))
+async def add_promo_admin_cmd(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    parts = message.text.split()
+    if len(parts) == 4:
+        _, code, amount_str, uses_str = parts
+        code_upper = code.upper()
+        promos_db[code_upper] = {
+            "amount": int(amount_str),
+            "uses": int(uses_str)
+        }
+        save_promos(promos_db)
+        await message.answer(f"✅ Promokod yaratildi: <b>{code_upper}</b> ({int(amount_str):,} so'm, {uses_str} ta limit)", parse_mode="HTML")
+    else:
+        await message.answer("ℹ️ Foydalanish: <code>/addpromo <KOD> <summa> <limit></code>", parse_mode="HTML")
+
+
 @dp.message(CommandStart())
 async def start_cmd(message: types.Message, state: FSMContext):
     await state.clear()
@@ -405,6 +426,18 @@ async def pubg_uc_menu(message: types.Message, state: FSMContext):
             [
                 InlineKeyboardButton(text="660 UC - 117,300 so'm", callback_data="buy_uc_660"),
                 InlineKeyboardButton(text="1800 UC - 290,000 so'm", callback_data="buy_uc_1800"),
+            ],
+            [
+                InlineKeyboardButton(text="3850 UC - 570,200 so'm", callback_data="buy_uc_3850"),
+                InlineKeyboardButton(text="8100 UC - 1,220,000 so'm", callback_data="buy_uc_8100"),
+            ],
+            [
+                InlineKeyboardButton(text="16200 UC - 2,400,000 so'm", callback_data="buy_uc_16200"),
+                InlineKeyboardButton(text="24300 UC - 3,520,000 so'm", callback_data="buy_uc_24300"),
+            ],
+            [
+                InlineKeyboardButton(text="32400 UC - 4,620,000 so'm", callback_data="buy_uc_32400"),
+                InlineKeyboardButton(text="40500 UC - 6,000,000 so'm", callback_data="buy_uc_40500"),
             ]
         ]
     )
@@ -419,7 +452,13 @@ async def process_uc_selection(call: types.CallbackQuery, state: FSMContext):
         "60": 12500,
         "325": 58200,
         "660": 117300,
-        "1800": 290000
+        "1800": 290000,
+        "3850": 570200,
+        "8100": 1220000,
+        "16200": 2400000,
+        "24300": 3520000,
+        "32400": 4620000,
+        "40500": 6000000,
     }
     
     price = prices.get(uc_amount, 0)
@@ -1487,16 +1526,14 @@ async def resume_active_clocks():
 
 
 async def main():
-    if not os.path.exists("sessions"):
-        os.makedirs("sessions")
+    os.makedirs("sessions", exist_ok=True)
     print("ABDULLOHNING BOTI ISHGA TUSHDI")
     asyncio.create_task(resume_active_clocks())
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    if not os.path.exists("sessions"):
-        os.makedirs("sessions")
+    os.makedirs("sessions", exist_ok=True)
     
     # Veb-serverni alohida oqimda ishga tushiramiz (Render port xatosini oldini olish uchun)
     threading.Thread(target=run_web_server, daemon=True).start()
