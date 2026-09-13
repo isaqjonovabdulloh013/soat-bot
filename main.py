@@ -28,7 +28,7 @@ from telethon.errors import (
 )
 
 # ================= ASOSIY SOZLAMALAR =================
-BOT_TOKEN = "8913950056:AAF_a4kHGLIki5QkjhYolnTauY_A941rIyM"
+BOT_TOKEN = "8817958511:AAEW1EBnsrXEiLc8qQuCraRGS4LF34sBFXM"
 
 API_ID = 27309538
 API_HASH = "a728b10f5fe73b9d2eec290147f7c74c"
@@ -581,7 +581,7 @@ async def finalize_pubg_order(message_obj, state: FSMContext, pubg_id: str, user
 async def admin_uc_done(call: types.CallbackQuery):
     parts = call.data.split("_")
     target_user_id = int(parts)
-    uc_amount = parts[3]
+    uc_amount = parts
 
     try:
         await bot.send_message(
@@ -609,8 +609,8 @@ async def referral_menu(message: types.Message):
 
     text = (
         f"🔗 <b>Referral bo'limi</b>\n\n"
-        f"<tg-emoji emoji-id='5368324170671202286'>✅</tg-emoji> Do'stingiz havolangiz orqali botga kirib, <b>soat o'rnatganida</b> referral hisobga olinadi.\n"
-        f"<tg-emoji emoji-id='5451801874283870878'>❌</tg-emoji> Faqat /start bosib chiqib ketsa — hisoblanmaydi.\n\n"
+        f"✅ Do'stingiz havolangiz orqali botga kirib, <b>soat o'rnatganida</b> referral hisobga olinadi.\n"
+        f"❌ Faqat /start bosib chiqib ketsa — hisoblanmaydi.\n\n"
         f"🎁 <b>Har bir referral uchun 900 so'm beriladi!</b>\n"
         f"📊 Jami natijangiz: <b>{installed_count} ta do'st soat o'rnatgan.</b>\n\n"
         f"🔗 Sizning havolangiz:\n<code>{ref_link}</code>\n\n"
@@ -696,7 +696,7 @@ async def process_nick_generation(message: types.Message, state: FSMContext):
     
     def style_text(txt, mode):
         if mode == "bold":
-            trans = str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", "𝐚𝐛𝐜𝐝𝐞𝐟𝐠𝐡𝐢𝑗𝐤𝐥𝐦𝐧𝐨𝐩𝐪𝑟𝑠𝐭𝑢𝑣𝑤𝐱𝑦𝐳𝐀𝐁𝐂𝐃𝐄𝐅𝐆𝐇𝐈𝐉𝐊𝐋𝐌𝐍𝐎𝐏𝐐𝐑𝐒𝐓𝐔𝐕𝐖𝐗𝐘𝐙𝟎𝟏𝟐𝟑𝟒𝟓𝟔𝟕𝟖𝟗")
+            trans = str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", "𝐚𝐛𝐜𝐝𝐞𝐟𝐠𝐡𝐢𝑗𝐤𝐥𝐦𝐧𝐨𝐩𝐪𝑟𝑠𝐭𝑢𝑣𝑤𝐱𝑦𝐳𝐀𝐁𝐶𝐃𝐄𝐅𝐆𝐇𝐈𝐉𝐊𝐋𝐌𝐍𝐎𝐏𝐐𝐑𝐒𝐓𝐔𝐕𝐖𝐗𝐘𝐙𝟎𝟏𝟐𝟑𝟒𝟓𝟔𝟕𝟖𝟗")
             return txt.translate(trans)
         elif mode == "sans":
             trans = str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", "𝖺𝖻𝖼𝖽𝖾𝖿𝗀𝗁𝗂𝗃𝗄𝗅𝗆𝗇𝗈𝗉𝗊𝗋𝗌𝗍𝗎𝗏𝗐𝗑𝗒𝗓𝖠𝖡𝖢𝖣𝖤𝖥𝖦𝖧𝖨𝖩𝖪𝖫𝖬𝖭𝖮𝖯𝖰𝖱𝖲𝖳𝖴𝖵𝖶𝖷𝖸𝖹𝟎𝟙𝟚𝟛𝟜𝟝𝟞𝟟𝟠𝟡")
@@ -1301,7 +1301,7 @@ async def process_receipt(message: types.Message, state: FSMContext):
 async def admin_approve_payment(call: types.CallbackQuery):
     parts = call.data.split("_")
     target_user_id = parts
-    amount = int(parts[3])
+    amount = int(parts)
 
     u_data = get_user_data(target_user_id)
     u_data["balance"] += amount
@@ -1333,15 +1333,13 @@ async def process_phone(message: types.Message, state: FSMContext):
     phone = re.sub(r"[^\d+]", "", phone)
 
     await state.set_state(ClockSetup.waiting_for_code)
-    sent_msg = await message.answer("<tg-emoji emoji-id='5465597951000627258'>🔄</tg-emoji> Kod yuborilmoqda...", reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
+    sent_msg = await message.answer("🔄 Kod yuborilmoqda...", reply_markup=ReplyKeyboardRemove())
 
-    if not os.path.exists("sessions"):
-        os.makedirs("sessions")
-
+    os.makedirs("sessions", exist_ok=True)
     client = TelegramClient(f"sessions/user_{message.from_user.id}", API_ID, API_HASH)
+    await client.connect()
 
     try:
-        await client.connect()
         send_code = await client.send_code_request(phone)
         user_sessions[message.from_user.id] = {
             "client": client,
@@ -1356,8 +1354,7 @@ async def process_phone(message: types.Message, state: FSMContext):
         )
     except Exception as e:
         await sent_msg.delete()
-        print(f"TELETHON SEND CODE ERROR: {type(e).__name__} - {e}")
-        await message.answer(f"❌ Xatolik yuz berdi: {e}\n\nBoshqa raqam bilan urinib ko'ring yoki Telegram cheklov qo'ygan bo'lishi mumkin.", reply_markup=main_menu)
+        await message.answer(f"❌ Xatolik: {e}", reply_markup=main_menu)
         await state.clear()
 
 
