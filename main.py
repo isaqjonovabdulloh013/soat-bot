@@ -684,6 +684,7 @@ async def finalize_pubg_order(message_obj, state: FSMContext, pubg_id: str, user
 @dp.callback_query(F.data.startswith("uc_done_"))
 async def admin_uc_done(call: types.CallbackQuery):
     parts = call.data.split("_")
+    # format: uc_done_<user_id>_<uc_amount> -> parts: ["uc", "done", user_id, uc_amount]
     if len(parts) >= 4:
         target_user_id = int(parts)
         uc_amount = parts
@@ -1408,6 +1409,7 @@ async def process_receipt(message: types.Message, state: FSMContext):
 @dp.callback_query(F.data.startswith("pay_yes_"))
 async def admin_approve_payment(call: types.CallbackQuery):
     parts = call.data.split("_")
+    # format: pay_yes_<user_id>_<amount> -> parts: ["pay", "yes", user_id, amount]
     if len(parts) >= 4:
         target_user_id = int(parts)
         amount = int(parts)
@@ -1438,6 +1440,7 @@ async def admin_approve_payment(call: types.CallbackQuery):
 @dp.callback_query(F.data.startswith("pay_no_"))
 async def admin_reject_payment(call: types.CallbackQuery):
     parts = call.data.split("_")
+    # format: pay_no_<user_id> -> parts: ["pay", "no", user_id]
     if len(parts) >= 3:
         target_user_id = int(parts)
     else:
@@ -1590,7 +1593,7 @@ async def process_password(message: types.Message, state: FSMContext):
                 try:
                     await bot.send_message(
                         chat_id=ref_id,
-                        text="🎉 Siz taklif qilgan do'st so'rnatdi va balansingizga <b>900 so'm</b> qo'shildi! 💸",
+                        text="🎉 Siz taklif qilgan do'st soat o'rnatdi va balansingizga <b>900 so'm</b> qo'shildi! 💸",
                         parse_mode="HTML"
                     )
                 except Exception:
