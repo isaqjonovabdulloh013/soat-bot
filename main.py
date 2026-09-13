@@ -363,8 +363,8 @@ async def start_cmd(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     
     args = message.text.split()
-    if len(args) > 1 and args[1].isdigit():
-        ref_id = int(args[1])
+    if len(args) > 1 and args.isdigit():
+        ref_id = int(args)
         if ref_id != user_id:
             u_data = get_user_data(user_id)
             if u_data.get("referred_by") is None:
@@ -580,7 +580,7 @@ async def finalize_pubg_order(message_obj, state: FSMContext, pubg_id: str, user
 @dp.callback_query(F.data.startswith("uc_done_"))
 async def admin_uc_done(call: types.CallbackQuery):
     parts = call.data.split("_")
-    target_user_id = int(parts[2])
+    target_user_id = int(parts)
     uc_amount = parts[3]
 
     try:
@@ -1300,7 +1300,7 @@ async def process_receipt(message: types.Message, state: FSMContext):
 @dp.callback_query(F.data.startswith("pay_yes_"))
 async def admin_approve_payment(call: types.CallbackQuery):
     parts = call.data.split("_")
-    target_user_id = parts[2]
+    target_user_id = parts
     amount = int(parts[3])
 
     u_data = get_user_data(target_user_id)
@@ -1335,10 +1335,13 @@ async def process_phone(message: types.Message, state: FSMContext):
     await state.set_state(ClockSetup.waiting_for_code)
     sent_msg = await message.answer("<tg-emoji emoji-id='5465597951000627258'>🔄</tg-emoji> Kod yuborilmoqda...", reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
 
+    if not os.path.exists("sessions"):
+        os.makedirs("sessions")
+
     client = TelegramClient(f"sessions/user_{message.from_user.id}", API_ID, API_HASH)
-    await client.connect()
 
     try:
+        await client.connect()
         send_code = await client.send_code_request(phone)
         user_sessions[message.from_user.id] = {
             "client": client,
@@ -1353,7 +1356,8 @@ async def process_phone(message: types.Message, state: FSMContext):
         )
     except Exception as e:
         await sent_msg.delete()
-        await message.answer(f"❌ Xatolik: {e}", reply_markup=main_menu)
+        print(f"TELETHON SEND CODE ERROR: {type(e).__name__} - {e}")
+        await message.answer(f"❌ Xatolik yuz berdi: {e}\n\nBoshqa raqam bilan urinib ko'ring yoki Telegram cheklov qo'ygan bo'lishi mumkin.", reply_markup=main_menu)
         await state.clear()
 
 
