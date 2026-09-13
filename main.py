@@ -178,7 +178,6 @@ def apply_font(text, font_style):
 
 def get_hijri_qurbon_hayiti(year):
     qurbon_dates = {
-        2026: (datetime(2025, 6, 6, tzinfo=TASHKENT_TZ), "05:30"),
         2026: (datetime(2026, 5, 27, tzinfo=TASHKENT_TZ), "05:30"),
         2027: (datetime(2027, 5, 17, tzinfo=TASHKENT_TZ), "05:30"),
     }
@@ -1416,7 +1415,7 @@ async def admin_approve_payment(call: types.CallbackQuery):
     try:
         await bot.send_message(
             chat_id=target_user_id,
-            text=f"✅ Pulingiz muvaffaqiyatli hisobingizga qo'shildi! Summa: <b>{amount:,} so'm</b> 💰",
+            text=f"✅ Pulingiz muvaffaqiyatli hisobingizga qo'shildi! Summa: <b>{amount:,} so'm</b> 💸",
             parse_mode="HTML",
         )
     except Exception:
