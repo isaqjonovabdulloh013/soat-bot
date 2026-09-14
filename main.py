@@ -27,10 +27,6 @@ from telethon.errors import (
     SessionPasswordNeededError,
 )
 
-# Agar Gemini orqali chekni o'qimoqchi bo'lsangiz (ixtiyoriy, agar kerak bo'lsa):
-# import google.generativeai as genai
-# genai.configure(api_key="SIZNING_GEMINI_API_KEY")
-
 # ================= ASOSIY SOZLAMALAR =================
 BOT_TOKEN = "8817958511:AAGEVp4FS6T77-RPVvmCN2U6kSGGVuIrNCM"
 
@@ -433,6 +429,7 @@ async def add_promo_admin_cmd(message: types.Message):
         await message.answer("ℹ️ Foydalanish: <code>/addpromo <KOD> <summa> <limit></code>", parse_mode="HTML")
 
 
+# ================= YANGI QO'SHILGAN /3 BUYRUG'I =================
 @dp.message(F.text.startswith("/3"))
 async def admin_add_balance_cmd(message: types.Message):
     if message.from_user.id != ADMIN_ID:
@@ -740,6 +737,7 @@ async def admin_uc_done(call: types.CallbackQuery):
         await call.answer("Foydalanuvchiga xabar yuborildi!")
     except Exception as e:
         await call.answer(f"Xatolik yuz berdi: {e}", show_alert=True)
+# ===============================================================
 
 
 @dp.message(F.text == "Referral 💸")
@@ -842,7 +840,7 @@ async def process_nick_generation(message: types.Message, state: FSMContext):
     
     def style_text(txt, mode):
         if mode == "bold":
-            trans = str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", "𝐚𝐛𝐜𝐝𝐞𝐟𝐠𝐡𝐢𝑗𝐤𝐥𝐦𝐧𝐨𝐩𝐪𝑟𝑠𝐭𝑢𝑣𝑤𝐱𝑦𝐳𝐀𝐁𝐶𝐃𝐄𝐅𝐆𝐇𝐈𝐉𝐊𝐋𝐌𝐍𝐎𝐏𝐐𝐑𝐒𝐓𝐔𝐕𝐖𝐗𝐘𝐙𝟎𝟏𝟐𝟑𝟒𝟔𝟕𝟖𝟗")
+            trans = str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", "𝐚𝐛𝐜𝐝𝐞𝐟𝐠𝐡𝐢𝑗𝐤𝐥𝐦𝐧𝐨𝐩𝐪𝑟𝑠𝐭𝑢𝑣𝑤𝐱𝑦𝐳𝐀𝐁𝐶𝐃𝐄𝐅𝐆𝐇𝐈𝐉𝐊𝐋𝐌𝐍𝐎𝐏𝐐𝐑𝐒𝐓𝐔𝐕𝐖𝐗𝐘𝐙𝟎𝟏𝟐𝟑𝟒𝟓𝟔𝟕𝟖𝟗")
             return txt.translate(trans)
         elif mode == "sans":
             trans = str.maketrans("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", "𝖺𝖻𝖼𝖽𝖾𝖿𝗀𝗁𝗂𝗃𝗄𝗅𝗆𝗇𝗈𝗉𝗊𝗋𝗌𝗍𝗎𝗏𝗐𝗑𝗒𝗓𝖠𝖡𝖢𝖣𝖤𝖥𝖦𝖧𝖨𝖩𝖪𝖫𝖬𝖭𝖮𝖯𝖰𝖱𝖲𝖳𝖴𝖵𝖶𝖷𝖸𝖹𝟎𝟙𝟚𝟛𝟜𝟝𝟞𝟟𝟠𝟡")
@@ -1394,23 +1392,6 @@ async def process_amount(message: types.Message, state: FSMContext):
     await message.answer(text, reply_markup=cancel_keyboard, parse_mode="HTML")
 
 
-# ================= AVTOMATIK CHEK TEKSHIRISH QISMI =================
-
-async def verify_receipt_image(file_path: str, expected_amount: int) -> bool:
-    """
-    Bu funksiya chek rasmini tekshiradi. 
-    Hozircha oddiy simulyatsiya (haqiqiy API ulamoqchi bo'lsangiz shu yerga yozasiz).
-    Agar sizda bank/to'lov tizimi API bo'lsa, shu yerda tekshiruv yoziladi.
-    """
-    try:
-        # Masalan, OCR yordamida rasm o'qilyapti deb tasavvur qilamiz:
-        # Hozircha oddiy avtomatik qabul qilish yoki simulyatsiya uchun True qaytarib turamiz.
-        # Haqiqiy loyihada bu yerda OCR orqali summa va karta raqami mosligi tekshiriladi.
-        return True
-    except Exception:
-        return False
-
-
 @dp.message(PaymentState.waiting_for_receipt, F.photo)
 async def process_receipt(message: types.Message, state: FSMContext):
     data = await state.get_data()
@@ -1419,90 +1400,42 @@ async def process_receipt(message: types.Message, state: FSMContext):
     username = message.from_user.username or "Mavjud emas"
     full_name = message.from_user.full_name
 
-    photo = message.photo[-1]
-    file_info = await bot.get_file(photo.file_id)
-    
-    # Rasm Faylini vaqtincha yuklab olamiz
-    downloaded_file_path = f"receipt_{user_id}.jpg"
-    await bot.download_file(file_info.file_path, downloaded_file_path)
+    photo_file_id = message.photo[-1].file_id
 
-    processing_msg = await message.answer("🔄 Chek tekshirilmoqda, iltimos kuting...")
+    admin_text = (
+        f"💰 <b>Yangi to'lov cheki!</b>\n\n"
+        f"👤 Foydalanuvchi: {full_name} (@{username})\n"
+        f"🆔 ID: <code>{user_id}</code>\n"
+        f"💵 Summa: <b>{amount:,} so'm</b>"
+    )
 
-    # Avtomatik haqiqiyligini tekshirish
-    is_valid = await verify_receipt_image(downloaded_file_path, amount)
-
-    # Vaqtincha saqlangan rasmni o'chirib tashlaymiz
-    if os.path.exists(downloaded_file_path):
-        os.remove(downloaded_file_path)
-
-    await processing_msg.delete()
-
-    if is_valid:
-        # Chek haqiqiy bo'lsa — avtomatik balansga qo'shamiz
-        u_data = get_user_data(user_id)
-        u_data["balance"] += amount
-        save_db(db)
-
-        await message.answer(
-            f"✅ <b>Chek tasdiqlandi!</b>\n"
-            f"💰 Hisobingizga muvaffaqiyatli <b>{amount:,} so'm</b> qo'shildi.",
-            reply_markup=main_menu,
-            parse_mode="HTML"
-        )
-
-        # Adminga ham xabar yuboramiz
-        admin_text = (
-            f"🤖 <b>Avtomatik tasdiqlangan to'lov!</b>\n\n"
-            f"👤 Foydalanuvchi: {full_name} (@{username})\n"
-            f"🆔 ID: <code>{user_id}</code>\n"
-            f"💵 Summa: <b>{amount:,} so'm</b>\n"
-            f"✅ Holati: Avtomatik o'qildi va qo'shildi."
-        )
-        try:
-            await bot.send_photo(
-                chat_id=ADMIN_ID,
-                photo=photo.file_id,
-                caption=admin_text,
-                parse_mode="HTML"
-            )
-        except Exception:
-            pass
-
-    else:
-        # Chek soxta yoki o'qib bo'linmasa adminga qo'lda tekshirish uchun yuboramiz
-        admin_text = (
-            f"⚠️ <b>Avtomatik tekshiruvdan o'tmagan chek! (Qo'lda tekshiring)</b>\n\n"
-            f"👤 Foydalanuvchi: {full_name} (@{username})\n"
-            f"🆔 ID: <code>{user_id}</code>\n"
-            f"💵 Summa: <b>{amount:,} so'm</b>"
-        )
-        admin_kb = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="Tasdiqlash ✅",
-                        callback_data=f"pay_yes_{user_id}_{amount}",
-                    ),
-                    InlineKeyboardButton(
-                        text="Rad etish ❌", callback_data=f"pay_no_{user_id}"
-                    ),
-                ]
+    admin_kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Tasdiqlash ✅",
+                    callback_data=f"pay_yes_{user_id}_{amount}",
+                ),
+                InlineKeyboardButton(
+                    text="Rad etish ❌", callback_data=f"pay_no_{user_id}"
+                ),
             ]
+        ]
+    )
+
+    try:
+        await bot.send_photo(
+            chat_id=ADMIN_ID,
+            photo=photo_file_id,
+            caption=admin_text,
+            reply_markup=admin_kb,
+            parse_mode="HTML",
         )
-        try:
-            await bot.send_photo(
-                chat_id=ADMIN_ID,
-                photo=photo.file_id,
-                caption=admin_text,
-                reply_markup=admin_kb,
-                parse_mode="HTML",
-            )
-            await message.answer(
-                "⚠️ Chekingiz avtomatik tasdiqlanmadi, adminlarimiz qo'lda ko'rib chiqish uchun yuborildi.", 
-                reply_markup=main_menu
-            )
-        except Exception as e:
-            await message.answer(f"❌ Xatolik yuz berdi: {e}", reply_markup=main_menu)
+        await message.answer(
+            "✅ Chekingiz adminga yuborildi!", reply_markup=main_menu
+        )
+    except Exception as e:
+        await message.answer(f"❌ Xatolik yuz berdi: {e}", reply_markup=main_menu)
 
     await state.clear()
 
