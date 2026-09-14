@@ -301,7 +301,9 @@ async def start_user_clock(user_id, client):
                 clean_bio = about_text.split("|")[0].strip()
             else:
                 clean_bio = about_text
-            clean_bio = re.sub(r"(🕒|⏳|🎂|🎄|✨|Good|Tug'ilgan|Yangi|Vatan|Qurbon|8-mart).*$", "", clean_bio).strip()
+            
+            # TO'G'RILANDI: Qurbon va masjid emojilari ortiqcha ko'payib ketmasligi uchun tozalash sharti kengaytirildi
+            clean_bio = re.sub(r"(🕒|⏳|🎂|🎄|✨|🕌|Good|Tug'ilgan|Yangi|Vatan|Qurbon|8-mart).*$", "", clean_bio).strip()
             
             extra_bio = []
             if u_data.get("bio_clock", False):
@@ -1112,7 +1114,6 @@ async def set_bio_menu_cb(call: types.CallbackQuery):
     }
     bio_type_text = type_names.get(b_type, "Oddiy bio soat")
     
-    # O'ZGARTIRISH: "Bioga soatni o'chirish" -> "Bioni o'chirish"
     toggle_text = "Bioni o'chirish" if bio_active else "Bioni yoqish"
     toggle_cb = "toggle_bio_off" if bio_active else "toggle_bio_on"
 
