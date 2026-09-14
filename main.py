@@ -184,6 +184,7 @@ def get_hijri_qurbon_hayiti(year):
         2025: (datetime(2025, 6, 6, tzinfo=TASHKENT_TZ), "05:30"),
         2026: (datetime(2026, 5, 27, tzinfo=TASHKENT_TZ), "05:30"),
         2027: (datetime(2027, 5, 17, tzinfo=TASHKENT_TZ), "05:30"),
+        2028: (datetime(2028, 5, 6, tzinfo=TASHKENT_TZ), "05:30"),
     }
     target_dt = qurbon_dates.get(year, (datetime(year, 6, 1, tzinfo=TASHKENT_TZ), "05:30"))
     return target_dt
@@ -367,7 +368,7 @@ async def start_user_clock(user_id, client):
                     extra_bio.append(f"🕌 Qurbon hayiti ({wday}): {days}k {hours%24}s | Namoz: {namoz_time}")
 
             if u_data.get("plan") == "Free":
-                extra_bio.append("✨ @profilsoat_uz_bot")
+                extra_bio.append("✨ @tmclock_bot")
 
             final_bio = f"{clean_bio} " + " | ".join(extra_bio) if extra_bio else clean_bio
 
@@ -398,7 +399,6 @@ async def start_user_clock(user_id, client):
         await asyncio.sleep(sleep_time)
 
 
-# ================= ADMIN PROMO CREATION =================
 @dp.message(F.text.startswith("/addpromo"))
 async def add_promo_admin_cmd(message: types.Message):
     if message.from_user.id != ADMIN_ID:
@@ -429,7 +429,6 @@ async def add_promo_admin_cmd(message: types.Message):
         await message.answer("ℹ️ Foydalanish: <code>/addpromo <KOD> <summa> <limit></code>", parse_mode="HTML")
 
 
-# ================= YANGI QO'SHILGAN /3 BUYRUG'I =================
 @dp.message(F.text.startswith("/3"))
 async def admin_add_balance_cmd(message: types.Message):
     if message.from_user.id != ADMIN_ID:
@@ -507,8 +506,6 @@ async def cancel_all_states(message: types.Message, state: FSMContext):
     await state.clear()
     await message.answer("❌ Amal bekor qilindi.", reply_markup=main_menu)
 
-
-# ================= PUBG UC XARID QILISH BO'LIMI =================
 
 @dp.message(F.text == "PUBG UC 🎮")
 async def pubg_uc_menu(message: types.Message, state: FSMContext):
@@ -720,8 +717,8 @@ async def finalize_pubg_order(message_obj, state: FSMContext, pubg_id: str, user
 async def admin_uc_done(call: types.CallbackQuery):
     parts = call.data.split("_")
     if len(parts) >= 4:
-        target_user_id = int(parts)
-        uc_amount = parts
+        target_user_id = int(parts[2])
+        uc_amount = parts[3]
     else:
         await call.answer("Xatolik: ma'lumot formati noto'g'ri!", show_alert=True)
         return
@@ -737,7 +734,6 @@ async def admin_uc_done(call: types.CallbackQuery):
         await call.answer("Foydalanuvchiga xabar yuborildi!")
     except Exception as e:
         await call.answer(f"Xatolik yuz berdi: {e}", show_alert=True)
-# ===============================================================
 
 
 @dp.message(F.text == "Referral 💸")
@@ -961,7 +957,7 @@ async def choose_plan_callback(call: types.CallbackQuery):
     u_data = get_user_data(user_id)
     
     if u_data.get("plan") == plan_name:
-        await call.answer(f"Siz allaqachon {plan_name} tarifikdasiz!", show_alert=True)
+        await call.answer(f"Siz allaqachon {plan_name} tarifidasiz!", show_alert=True)
         return
 
     prices = {
@@ -1444,8 +1440,8 @@ async def process_receipt(message: types.Message, state: FSMContext):
 async def admin_approve_payment(call: types.CallbackQuery):
     parts = call.data.split("_")
     if len(parts) >= 4:
-        target_user_id = int(parts)
-        amount = int(parts)
+        target_user_id = int(parts[2])
+        amount = int(parts[3])
     else:
         await call.answer("Xatolik!", show_alert=True)
         return
@@ -1474,7 +1470,7 @@ async def admin_approve_payment(call: types.CallbackQuery):
 async def admin_reject_payment(call: types.CallbackQuery):
     parts = call.data.split("_")
     if len(parts) >= 3:
-        target_user_id = int(parts)
+        target_user_id = int(parts[2])
     else:
         await call.answer("Xatolik!", show_alert=True)
         return
