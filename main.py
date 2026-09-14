@@ -1112,7 +1112,8 @@ async def set_bio_menu_cb(call: types.CallbackQuery):
     }
     bio_type_text = type_names.get(b_type, "Oddiy bio soat")
     
-    toggle_text = "Bioga soatni o'chirish" if bio_active else "Bioni yoqish"
+    # O'ZGARTIRISH: "Bioga soatni o'chirish" -> "Bioni o'chirish"
+    toggle_text = "Bioni o'chirish" if bio_active else "Bioni yoqish"
     toggle_cb = "toggle_bio_off" if bio_active else "toggle_bio_on"
 
     kb = InlineKeyboardMarkup(
