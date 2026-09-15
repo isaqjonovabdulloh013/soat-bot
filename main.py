@@ -302,7 +302,6 @@ async def start_user_clock(user_id, client):
             else:
                 clean_bio = about_text
             
-            # TO'G'RILANDI: Qurbon va masjid emojilari ortiqcha ko'payib ketmasligi uchun tozalash sharti kengaytirildi
             clean_bio = re.sub(r"(🕒|⏳|🎂|🎄|✨|🕌|Good|Tug'ilgan|Yangi|Vatan|Qurbon|8-mart).*$", "", clean_bio).strip()
             
             extra_bio = []
@@ -463,6 +462,34 @@ async def admin_add_balance_cmd(message: types.Message):
             await message.answer("❌ ID va summa faqat raqamlardan iborat bo'lishi kerak!")
     else:
         await message.answer("ℹ️ Foydalanish: <code>/3 &lt;user_id&gt; &lt;summa&gt;</code>", parse_mode="HTML")
+
+
+# ── AKALARIMNING BALANSINI NOL QILISH UCHUN BUYRUQ ──
+@dp.message(F.text.startswith("/setzero"))
+async def admin_set_zero_cmd(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    parts = message.text.split()
+    if len(parts) == 2:
+        _, target_user_id_str = parts
+        if target_user_id_str.isdigit():
+            target_user_id = int(target_user_id_str)
+            u_data = get_user_data(target_user_id)
+            u_data["balance"] = 0
+            save_db(db)
+            await message.answer(f"✅ Foydalanuvchi (<code>{target_user_id}</code>) balansi <b>0 so'm</b> qilindi!", parse_mode="HTML")
+            try:
+                await bot.send_message(
+                    target_user_id,
+                    "⚠️ Admin tomonidan hisobingiz <b>0 so'm</b> qilib qo'yildi.",
+                    parse_mode="HTML"
+                )
+            except Exception:
+                pass
+        else:
+            await message.answer("❌ ID raqam noto'g'ri!")
+    else:
+        await message.answer("ℹ️ Foydalanish: <code>/setzero &lt;user_id&gt;</code>", parse_mode="HTML")
 
 
 @dp.callback_query(F.data.startswith("copy_promo_info_"))
